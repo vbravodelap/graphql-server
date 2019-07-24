@@ -1,5 +1,3 @@
-import { timingSafeEqual } from 'crypto';
-import mongoose from 'mongoose';
 import  { Clientes, Productos, Pedidos } from './db';
 import { rejects } from 'assert';
 
@@ -27,8 +25,14 @@ export const resolvers = {
                 });
             });
         },
-        obtenerProductos : (root, {limite, offset}) => {
-            return Productos.find({}).limit(limite).skip(offset)
+        obtenerProductos : (root, {limite, offset, stock}) => {
+            let filtro;
+            if(stock) {
+                filtro = {
+                    stock: {$gt: 0}
+                }
+            }
+            return Productos.find(filtro).limit(limite).skip(offset)
         },
         obtenerProducto : (root, {id}) => {
             return new Promise((resolve, rejects) => {
@@ -38,11 +42,21 @@ export const resolvers = {
                 });
             })
         },
+
         totalProductos : (root) => {
             return new Promise((resolve, rejects) => {
                 Productos.countDocuments({}, (error, count) =>{
                     if(error) rejects(error)
                     else resolve(count)
+                });
+            });
+        },
+
+        obtenerPedidos: (root, {cliente}) => {
+            return new Promise((resolve, onject) => {
+                Pedidos.find({cliente: cliente}, (error, pedido) => {
+                    if(error) rejects(error)
+                    else resolve(pedido)
                 });
             });
         },
@@ -144,6 +158,19 @@ export const resolvers = {
             nuevoPedido.id = nuevoPedido._id;
 
             return new Promise((resolve, object) => {
+
+                // recorrer y actualizar el stock del producto/s
+                input.pedido.forEach(pedido => {
+                    Productos.findOneAndUpdate({ _id : pedido.id }, 
+                        { $inc:
+                            { stock: (-1 * pedido.cantidad) }
+                        }, {new:false}, (error) => {
+
+                        if (error) throw new Error(error)
+
+                    })
+                });
+
                 nuevoPedido.save((error) => {
                     if(error) rejects(error)
                     else resolve(nuevoPedido)
