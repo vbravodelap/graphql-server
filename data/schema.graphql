@@ -20,6 +20,11 @@ type Cliente {
         stock: Int!
     }
 
+    type ClienteTotal {
+        total: Float
+        cliente: [Cliente]
+    }
+
     type Pedido {
         id: ID
         pedido: [PedidoProducto]
@@ -56,7 +61,10 @@ type Cliente {
         totalProductos : String
 
         #pedidos
-        obtenerPedidos( cliente: String ) : [Pedido]
+        obtenerPedidos( cliente: ID ) : [Pedido]
+
+        #graficas
+        topClientes : [ClienteTotal]
     }
 
     input EmailInput{
@@ -104,5 +112,13 @@ type Cliente {
         nuevoProducto(input: ProductoInput) : Producto
         actualizarProducto(input: ProductoInput) : Producto
         eliminarProducto(id: ID!) : String
+
+        #pedidos
         nuevoPedido(input: PedidoInput) : Pedido
+        actualizarEstado(input: PedidoInput) : String
+
+        #usuarios
+        crearUsuario(usuario: String!, password: String! ) : String
+
+        
     }

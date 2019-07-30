@@ -33,11 +33,19 @@ const pedidosSchema = new mongoose.Schema({
     pedido: Array,
     total: Number,
     fecha: Date,
-    cliente: String,
+    cliente: mongoose.Types.ObjectId,
     estado: String
 });
 const Pedidos = mongoose.model('pedidos', pedidosSchema);
 
+// Usuarios
+const usuariosSchema = new mongoose.Schema({
+    usuario: String,
+    password: String,
+});
 
-export { Clientes, Productos, Pedidos };
+const Usuarios = mongoose.model('usuarios', usuariosSchema)
+
+
+export { Clientes, Productos, Pedidos, Usuarios };
 

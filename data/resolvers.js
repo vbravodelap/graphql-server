@@ -1,4 +1,4 @@
-import  { Clientes, Productos, Pedidos } from './db';
+import  { Clientes, Productos, Pedidos, Usuarios } from './db';
 import { rejects } from 'assert';
 
 export const resolvers = {
@@ -60,6 +60,45 @@ export const resolvers = {
                 });
             });
         },
+
+        topClientes: (root) => {
+            return new Promise((resolve, object) => {
+                Pedidos.aggregate([
+                    {
+                        $match: {
+                            estado: "COMPLETADO"
+                        }
+                    },
+                    
+                    {
+                        $group: {
+                            _id: "$cliente",
+                            total: { $sum: "$total" }
+                        }
+                    },
+                    
+                    {
+                        $lookup : {
+                            from: "clientes",
+                            localField: '_id',
+                            foreignField: '_id',
+                            as: 'cliente'
+                        }
+                    },
+                    
+                    {
+                        $sort: { total: -1 }
+                    },
+                    
+                    {
+                        $limit: 10
+                    }
+                ], (error, resultado) => {
+                    if(error) rejects(error)
+                    else resolve(resultado)
+                })
+            })
+        }
 
     },Mutation: {
 
@@ -159,23 +198,64 @@ export const resolvers = {
 
             return new Promise((resolve, object) => {
 
-                // recorrer y actualizar el stock del producto/s
-                input.pedido.forEach(pedido => {
-                    Productos.findOneAndUpdate({ _id : pedido.id }, 
-                        { $inc:
-                            { stock: (-1 * pedido.cantidad) }
-                        }, {new:false}, (error) => {
-
-                        if (error) throw new Error(error)
-
-                    })
-                });
-
                 nuevoPedido.save((error) => {
                     if(error) rejects(error)
                     else resolve(nuevoPedido)
                 })
             });
+        },
+        actualizarEstado: (root, {input}) => {
+            return new Promise((resolve, object) => {
+
+                // recorrer y actualizar el stock del producto/s en base al estado del producto
+
+                const { estado } = input;
+
+                let instruccion; 
+                if(estado === 'COMPLETADO'){
+
+                    instruccion = '-';
+
+                } else if (estado === 'CANCELADO'){
+
+                    instruccion = '+';
+
+                }
+
+                input.pedido.forEach(pedido => {
+                    Productos.updateOne({ _id : pedido.id }, 
+                        { "$inc":
+                            { "stock": `${instruccion}${pedido.cantidad}` }
+                        }, function(error) {
+                            if(error) return new Error(error)
+                        }
+
+                    )
+                });
+
+                Pedidos.findOneAndUpdate({_id: input.id }, input, {new: true}, (error) => {
+                    if(error) rejects(error);
+                    else resolve('Se actualizo correctamente');
+                })
+            })
+        },
+    
+        crearUsuario: async(root, {usuario, password}) => {
+
+            // revisar si un usuario contiene ese password
+            const existeUsuario = await Usuarios.findOne({usuario})
+
+            if(existeUsuario) {
+                throw new Error('El usuario ya existe');
+            }
+            
+            const nuevoUsuario = await new Usuarios({
+                usuario,
+                password
+            }).save();
+
+            return "Creado correctamente"
+
         }
 
     }
