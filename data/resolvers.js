@@ -1,5 +1,17 @@
 import  { Clientes, Productos, Pedidos, Usuarios } from './db';
 import { rejects } from 'assert';
+import bcrypt from 'bcrypt';
+
+// generar token
+import dotenv from 'dotenv';
+dotenv.config({path: 'variables.env'});
+import jwt from 'jsonwebtoken';
+
+const crearToken = (usuarioLogin, secreto, expiresIn) => {
+    const { usuario } = usuarioLogin;
+    
+    return jwt.sign({usuario}, secreto, {expiresIn});
+}
 
 export const resolvers = {
     Query: {
@@ -98,6 +110,19 @@ export const resolvers = {
                     else resolve(resultado)
                 })
             })
+        },
+        
+        obtenerUsuario: (root, args, {usuarioActual}) => {
+
+            if(!usuarioActual) {
+                return null;
+            }
+
+            // Obtener usuario actual del token 
+            const usuario = Usuarios.findOne({usuario: usuarioActual.usuario });
+
+            return usuario;
+            
         }
 
     },Mutation: {
@@ -256,6 +281,24 @@ export const resolvers = {
 
             return "Creado correctamente"
 
+        },
+        autenticarUsuario: async(root, {usuario, password}) => {
+            const nombreUsuario = await Usuarios.findOne({usuario});
+
+            if(!nombreUsuario){
+                throw new Error('Usuario no encontrado');
+            }
+
+            const passwordCorrecto = await bcrypt.compare(password, nombreUsuario.password)
+
+            // si el password es incorrecto
+            if(!passwordCorrecto) {
+                throw new Error('Password incorrecto')
+            } 
+
+            return {
+                token: crearToken(nombreUsuario, process.env.SECRETO, '1hr')
+            }
         }
 
     }

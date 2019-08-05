@@ -25,6 +25,15 @@ type Cliente {
         cliente: [Cliente]
     }
 
+    type Token {
+        token: String!
+    }
+
+    type Usuario {
+        usuario: String
+    }
+
+
     type Pedido {
         id: ID
         pedido: [PedidoProducto]
@@ -65,6 +74,9 @@ type Cliente {
 
         #graficas
         topClientes : [ClienteTotal]
+
+        #usuarios
+        obtenerUsuario: Usuario
     }
 
     input EmailInput{
@@ -118,7 +130,8 @@ type Cliente {
         actualizarEstado(input: PedidoInput) : String
 
         #usuarios
-        crearUsuario(usuario: String!, password: String! ) : String
+        crearUsuario( usuario: String!, password: String! ) : String
+        autenticarUsuario( usuario: String!, password: String! ) : Token
 
         
     }

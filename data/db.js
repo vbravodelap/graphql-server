@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import bcrypt from 'bcrypt';
 
 mongoose.Promise = global.Promise;
 
@@ -42,6 +43,24 @@ const Pedidos = mongoose.model('pedidos', pedidosSchema);
 const usuariosSchema = new mongoose.Schema({
     usuario: String,
     password: String,
+});
+
+// Hashear password 
+usuariosSchema.pre('save', function(next){
+    // si el password no esta modificado
+    if(!this.isModified('password')){
+        return next();
+    }
+
+    bcrypt.genSalt(10, (err, salt) => {
+        if(err) return next(err);
+
+        bcrypt.hash(this.password, salt, (err, hash) => {
+            if(err) return next(err);
+            this.password = hash;
+            next();
+        });
+    })
 });
 
 const Usuarios = mongoose.model('usuarios', usuariosSchema)
